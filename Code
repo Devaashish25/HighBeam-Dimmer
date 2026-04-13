@@ -1,0 +1,45 @@
+import cv2
+import numpy as np
+
+cap = cv2.VideoCapture(0)
+
+print("Controls: 'q' to Quit, 's' to Save Screenshot")
+
+while True:
+    ret, frame = cap.read()
+    if not ret: break
+
+    # 1. Get the Brightness
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # 2. Calculate Intensity (0.0 to 1.0)
+    intensity = (gray.astype(float) - 180) / (255 - 180)
+    intensity = np.clip(intensity, 0, 1)
+
+    # 3. SMOOTH THE EDGES 
+    intensity = cv2.GaussianBlur(intensity, (51, 51), 0)
+
+    # 4. Create the Shadow Color (Black)
+    shadow = np.zeros_like(frame)
+
+    # 5. BLEND (The Formula)
+    mask_3d = intensity[:, :, None]
+    result = (frame * (1 - mask_3d) + shadow * mask_3d).astype(np.uint8)
+
+    # --- NEW: LISTEN FOR KEYS ---
+    key = cv2.waitKey(1) & 0xFF
+
+    # If 'q' is pressed, stop the program
+    if key == ord('q'):
+        break
+    
+    # If 's' is pressed, save the current frame as an image
+    if key == ord('s'):
+        cv2.imwrite('dimmed_shot.png', result)
+        print("Screenshot saved as dimmed_shot.png")
+
+    cv2.imshow('Soft Shadow Dimmer', result)
+
+# Clean up
+cap.release()
+cv2.destroyAllWindows()
